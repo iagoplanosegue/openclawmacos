@@ -10,6 +10,25 @@
 > Detecta automaticamente seu chip (M1/M2/M3/M4) e ajusta heap, threads e paralelismo para máxima performance.
 
 ---
+## 📋 Pré-requisitos
+
+Antes de rodar o script, execute os três comandos abaixo em ordem:
+
+**1. Xcode Command Line Tools**
+```bash
+xcode-select --install
+```
+> Abrirá uma janela gráfica — clique em **Instalar** e aguarde ~5 minutos.
+
+**2. Homebrew**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+**3. Recarregar o terminal**
+```bash
+source ~/.zshrc
+```
 
 ## ⚡ Instalação rápida
 
@@ -39,26 +58,6 @@ openclaw onboard
 > O script detecta chip e RAM automaticamente — nenhuma configuração manual necessária.
 
 ---
-
-## 📋 Pré-requisitos
-
-Antes de rodar o script, execute os três comandos abaixo em ordem:
-
-**1. Xcode Command Line Tools**
-```bash
-xcode-select --install
-```
-> Abrirá uma janela gráfica — clique em **Instalar** e aguarde ~5 minutos.
-
-**2. Homebrew**
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-**3. Recarregar o terminal**
-```bash
-source ~/.zshrc
-```
 
 **Verificação rápida antes de continuar:**
 ```bash
