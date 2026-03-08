@@ -33,8 +33,7 @@ source ~/.zshrc
 ## ⚡ Instalação rápida
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/iagoplanosegue/openclawmacos/main/install.sh -o install.sh \
-  && chmod +x install.sh && ./install.sh
+curl -fsSL https://raw.githubusercontent.com/iagoplanosegue/openclawmacos/main/install.sh | bash
 ```
 
 Depois de concluir:
