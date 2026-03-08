@@ -1,4 +1,3 @@
-cat > install.sh << 'ENDOFSCRIPT'
 #!/bin/bash
 # ================================================================
 #  INSTALADOR OPENCLAW - macOS Apple Silicon Universal
@@ -34,7 +33,7 @@ case "$CHIP_GEN" in
   M4) NODE_EXTRA="--turbofan --max-semi-space-size=256" ;;
   M3) NODE_EXTRA="--turbofan --max-semi-space-size=192" ;;
   M2) NODE_EXTRA="--turbofan --max-semi-space-size=128" ;;
-  M1) NODE_EXTRA="--max-semi-space-size=64"             ;;
+  M1) NODE_EXTRA="--max-semi-space-size=64" ;;
 esac
 
 echo "Chip: Apple ${CHIP_GEN}${CHIP_VARIANT} | RAM: ${RAM_GB}GB | Heap: $(( NODE_HEAP_MB/1024 ))GB"
@@ -42,19 +41,21 @@ echo "Chip: Apple ${CHIP_GEN}${CHIP_VARIANT} | RAM: ${RAM_GB}GB | Heap: $(( NODE
 export NVM_DIR="$HOME/.nvm"
 [ -d "$NVM_DIR" ] || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-command -v node >/dev/null 2>&1 || { nvm install 22; nvm use 22; nvm alias default 22; }
 
+command -v node >/dev/null 2>&1 || { nvm install 22; nvm use 22; nvm alias default 22; }
 command -v pnpm >/dev/null 2>&1 || npm install -g pnpm
 command -v git  >/dev/null 2>&1 || { echo "Git nao encontrado: xcode-select --install"; exit 1; }
 
 [ -d "$HOME/.openclaw/install" ] && rm -rf "$HOME/.openclaw/install"
 mkdir -p "$HOME/.openclaw/install" && cd "$HOME/.openclaw/install"
 git clone --depth 1 https://github.com/openclaw/openclaw.git && cd openclaw
+
 PNPM_CONCURRENCY=$PNPM_WORKERS pnpm install
 NODE_OPTIONS="--max-old-space-size=${NODE_HEAP_MB} ${NODE_EXTRA}" pnpm run build
 
 mkdir -p "$HOME/.local/bin"
 W_PATH="$HOME/.openclaw/install/openclaw/openclaw.mjs"
+
 cat > "$HOME/.local/bin/openclaw" << WRAPPER
 #!/bin/bash
 export NODE_OPTIONS="--max-old-space-size=${NODE_HEAP_MB} ${NODE_EXTRA}"
@@ -63,12 +64,11 @@ exec node "${W_PATH}" "\$@"
 WRAPPER
 chmod +x "$HOME/.local/bin/openclaw"
 
-grep -q ".local/bin" "$HOME/.zshrc" 2>/dev/null || printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.zshrc"
-grep -q "NVM_DIR"    "$HOME/.zshrc" 2>/dev/null || {
+grep -q ".local/bin"  "$HOME/.zshrc" 2>/dev/null || printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.zshrc"
+grep -q "NVM_DIR"     "$HOME/.zshrc" 2>/dev/null || {
   printf '\nexport NVM_DIR="$HOME/.nvm"\n' >> "$HOME/.zshrc"
   printf '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"\n' >> "$HOME/.zshrc"
 }
 
-echo "Concluido. Execute: source ~/.zshrc && openclaw onboard"
-ENDOFSCRIPT
-chmod +x install.sh && ./install.sh
+echo ""
+echo "Concluido! Execute: source ~/.zshrc && openclaw onboard"
