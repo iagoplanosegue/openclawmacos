@@ -171,7 +171,7 @@ Abra uma [issue](https://github.com/iagoplanosegue/openclawmacos/issues) com:
 
 ## 📄 Licença
 
-MIT © [Iago Plano Segue](https://github.com/iagoplanosegue)
+MIT © [Iago PlanoSegue](https://github.com/iagoplanosegue)
 
 ---
 
