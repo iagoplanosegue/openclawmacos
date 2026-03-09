@@ -1,180 +1,182 @@
-#!/bin/bash
-# ================================================================
-#  INSTALADOR OPENCLAW - macOS Apple Silicon Universal
-#  Detecta automaticamente: M1 / M2 / M3 / M4
-# ================================================================
+# ⬡ OpenClaw — macOS Apple Silicon
 
-# ── Cores ─────────────────────────────────────────────────────
-GRN='\033[0;32m' CYN='\033[0;36m' YLW='\033[1;33m' RED='\033[0;31m' RST='\033[0m' BLD='\033[1m'
-ok()   { echo -e "${GRN}[OK]${RST} $1"; }
-info() { echo -e "${CYN}[..] $1${RST}"; }
-warn() { echo -e "${YLW}[!!] $1${RST}"; }
-fail() { echo -e "${RED}[XX] $1${RST}"; exit 1; }
+[![Versão](https://img.shields.io/badge/versão-1.1.0-00ff88?style=flat-square&labelColor=0d1117)](https://github.com/iagoplanosegue/openclawmacos)
+[![Chips](https://img.shields.io/badge/chips-M1%20%7C%20M2%20%7C%20M3%20%7C%20M4-00d4ff?style=flat-square&labelColor=0d1117)](https://github.com/iagoplanosegue/openclawmacos)
+[![Node.js](https://img.shields.io/badge/Node.js-22-339933?style=flat-square&logo=node.js&logoColor=white&labelColor=0d1117)](https://nodejs.org)
+[![Licença](https://img.shields.io/badge/licença-MIT-ff6b35?style=flat-square&labelColor=0d1117)](./LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-Ventura%2B-white?style=flat-square&logo=apple&logoColor=white&labelColor=0d1117)](https://www.apple.com/macos)
 
-# NÃO usar set -e — tratamos erros manualmente para dar mensagens claras
-set -o pipefail
+> Script de instalação otimizado para OpenClaw em Apple Silicon.  
+> Detecta automaticamente seu chip (M1/M2/M3/M4) e ajusta heap, threads e paralelismo para máxima performance.
 
-echo -e "\n${BLD}OpenClaw Installer — macOS Apple Silicon${RST}\n"
+---
 
-# ── Detecta hardware ──────────────────────────────────────────
-chip_raw=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || true)
-RAM_GB=$(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
-CPU_TOTAL=$(sysctl -n hw.physicalcpu)
-CPU_PERF=$(sysctl -n hw.perflevel0.physicalcpu 2>/dev/null || echo "$CPU_TOTAL")
+## 📋 Pré-requisitos
 
-if   echo "$chip_raw" | grep -q "M4"; then CHIP_GEN="M4"
-elif echo "$chip_raw" | grep -q "M3"; then CHIP_GEN="M3"
-elif echo "$chip_raw" | grep -q "M2"; then CHIP_GEN="M2"
-else                                        CHIP_GEN="M1"; fi
+Antes de rodar o script, execute os três comandos abaixo em ordem:
 
-if   [ "$CPU_TOTAL" -ge 24 ]; then CHIP_VARIANT="Ultra"
-elif [ "$CPU_TOTAL" -ge 12 ]; then CHIP_VARIANT="Max"
-elif [ "$CPU_TOTAL" -ge 10 ]; then CHIP_VARIANT="Pro"
-else                                CHIP_VARIANT=""; fi
+**1. Xcode Command Line Tools**
+```bash
+xcode-select --install
+```
+> Abrirá uma janela gráfica — clique em **Instalar** e aguarde ~5 minutos.
 
-if   [ "$RAM_GB" -ge 64 ]; then OS_RESERVE=8
-elif [ "$RAM_GB" -ge 32 ]; then OS_RESERVE=6
-elif [ "$RAM_GB" -ge 16 ]; then OS_RESERVE=4
-else                             OS_RESERVE=3; fi
+**2. Homebrew**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-NODE_HEAP_MB=$(( (RAM_GB - OS_RESERVE) * 1024 ))
-PNPM_WORKERS=$(( CPU_PERF * 4 / 5 ))
-[ "$PNPM_WORKERS" -lt 2 ] && PNPM_WORKERS=2
+**3. Recarregar o terminal**
+```bash
+source ~/.zshrc
+```
 
-# --turbofan vai direto no exec node (nao é permitido em NODE_OPTIONS)
-case "$CHIP_GEN" in
-  M4) TURBOFAN="--turbofan"; SEMI_SPACE="--max-semi-space-size=256" ;;
-  M3) TURBOFAN="--turbofan"; SEMI_SPACE="--max-semi-space-size=192" ;;
-  M2) TURBOFAN="--turbofan"; SEMI_SPACE="--max-semi-space-size=128" ;;
-  M1) TURBOFAN="";            SEMI_SPACE="--max-semi-space-size=64"  ;;
-esac
+**Verificação rápida antes de continuar:**
+```bash
+xcode-select --version  # xcode-select version 2409 (ou similar)
+brew --version          # Homebrew 4.x.x
+git --version           # git version 2.x.x
+```
 
-echo -e "  Chip:  ${BLD}Apple ${CHIP_GEN}${CHIP_VARIANT}${RST}"
-echo -e "  RAM:   ${BLD}${RAM_GB} GB${RST}  |  Heap Node.js: ${BLD}$(( NODE_HEAP_MB/1024 )) GB${RST}"
-echo -e "  Cores: ${BLD}${CPU_TOTAL}${RST}       |  Workers pnpm: ${BLD}${PNPM_WORKERS}${RST}\n"
+---
 
-# ── 1. Verifica Xcode tools ───────────────────────────────────
-info "Verificando Xcode Command Line Tools..."
-if ! xcode-select -p &>/dev/null; then
-  fail "Xcode CLI nao encontrado. Execute: xcode-select --install — depois rode este script novamente."
-fi
-ok "Xcode CLI OK"
+## ⚡ Instalação rápida
 
-# ── 2. Verifica Homebrew ──────────────────────────────────────
-info "Verificando Homebrew..."
-if ! command -v brew &>/dev/null; then
-  fail "Homebrew nao encontrado. Instale em https://brew.sh — depois rode este script novamente."
-fi
-ok "Homebrew OK"
+```bash
+curl -fsSL https://raw.githubusercontent.com/iagoplanosegue/openclawmacos/main/install.sh | bash
+```
 
-# ── 3. nvm ────────────────────────────────────────────────────
-info "Verificando nvm..."
-export NVM_DIR="$HOME/.nvm"
-if [ ! -d "$NVM_DIR" ]; then
-  info "Instalando nvm..."
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-  if [ ! -d "$NVM_DIR" ]; then
-    fail "Falha ao instalar nvm. Verifique sua conexao e tente novamente."
-  fi
-fi
+Depois de concluir:
 
-# Carrega nvm na sessão atual — CRÍTICO fazer antes de qualquer uso de node
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+```bash
+source ~/.zshrc
+openclaw onboard
+```
 
-if ! command -v nvm &>/dev/null && ! type nvm &>/dev/null; then
-  fail "nvm instalado mas nao carregou. Tente: source ~/.zshrc && bash install.sh"
-fi
-ok "nvm OK"
+---
 
-# ── 4. Node.js 22 ─────────────────────────────────────────────
-info "Verificando Node.js..."
-if command -v node &>/dev/null && [ "$(node --version | cut -d. -f1 | tr -d v)" -ge 22 ]; then
-  ok "Node.js $(node --version) ja instalado"
-else
-  info "Instalando Node.js 22 via nvm..."
-  nvm install 22 || fail "Falha ao instalar Node.js 22."
-  nvm use 22
-  nvm alias default 22
-  ok "Node.js $(node --version) instalado"
-fi
+## 🖥️ Chips suportados
 
-# Confirma que node está no PATH desta sessão
-command -v node &>/dev/null || fail "Node.js instalado mas nao encontrado no PATH. Verifique o nvm."
+| Chip | Variantes | Heap (16 GB) | Heap (8 GB) | Flags extras |
+|------|-----------|:------------:|:-----------:|--------------|
+| Apple M4 | base · Pro · Max · Ultra | 12 GB | 5 GB | `--turbofan --max-semi-space-size=256` |
+| Apple M3 | base · Pro · Max · Ultra | 12 GB | 5 GB | `--turbofan --max-semi-space-size=192` |
+| Apple M2 | base · Pro · Max · Ultra | 12 GB | 5 GB | `--turbofan --max-semi-space-size=128` |
+| Apple M1 | base · Pro · Max · Ultra | 12 GB | 5 GB | `--max-semi-space-size=64` |
 
-# ── 5. pnpm ───────────────────────────────────────────────────
-info "Verificando pnpm..."
-if ! command -v pnpm &>/dev/null; then
-  info "Instalando pnpm..."
-  npm install -g pnpm || fail "Falha ao instalar pnpm."
-fi
-ok "pnpm $(pnpm --version) OK"
+> O script detecta chip e RAM automaticamente — nenhuma configuração manual necessária.
 
-# ── 6. git ────────────────────────────────────────────────────
-command -v git &>/dev/null || fail "Git nao encontrado. Execute: xcode-select --install"
+---
 
-# ── 7. Clone ──────────────────────────────────────────────────
-INSTALL_DIR="$HOME/.openclaw/install/openclaw"
-info "Clonando repositorio..."
-rm -rf "$INSTALL_DIR"
-mkdir -p "$HOME/.openclaw/install"
-git clone --depth 1 https://github.com/openclaw/openclaw.git "$INSTALL_DIR" \
-  || fail "Falha no git clone. Verifique sua conexao com a internet."
-ok "Repositorio clonado"
 
-# ── 8. Build ──────────────────────────────────────────────────
-info "Instalando dependencias (pnpm install)..."
-cd "$INSTALL_DIR"
-PNPM_CONCURRENCY=$PNPM_WORKERS pnpm install \
-  || fail "Falha no pnpm install. Verifique o log acima."
 
-info "Compilando build (pnpm run build)..."
-NODE_OPTIONS="--max-old-space-size=${NODE_HEAP_MB} ${SEMI_SPACE}" pnpm run build \
-  || fail "Falha no pnpm run build. Verifique o log acima."
+## 🔍 O que o script faz
 
-# Confirma que o dist foi gerado
-if [ ! -f "$INSTALL_DIR/dist/entry.mjs" ] && [ ! -f "$INSTALL_DIR/dist/entry.js" ]; then
-  fail "Build falhou — dist/entry.(m)js nao encontrado. Verifique os erros acima."
-fi
-ok "Build concluido"
+```
+1. Detecta seu chip Apple Silicon (M1/M2/M3/M4) e variante (Pro/Max/Ultra)
+2. Calcula heap Node.js ideal baseado na RAM disponível
+3. Instala nvm + Node.js 22 (se necessário)
+4. Instala pnpm (mais rápido e eficiente que npm)
+5. Clona o repositório OpenClaw em ~/.openclaw/install
+6. Compila com otimizações específicas do chip detectado
+7. Cria wrapper global em ~/.local/bin/openclaw com NODE_OPTIONS permanente
+8. Atualiza ~/.zshrc com PATH e NVM_DIR
+```
 
-# ── 9. Wrapper global ─────────────────────────────────────────
-info "Criando comando global..."
-mkdir -p "$HOME/.local/bin"
-W_PATH="$INSTALL_DIR/openclaw.mjs"
+---
 
-# --turbofan vai no exec node, NAO em NODE_OPTIONS
-cat > "$HOME/.local/bin/openclaw" << WRAPPER
-#!/bin/bash
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
-export NODE_OPTIONS="--max-old-space-size=${NODE_HEAP_MB} ${SEMI_SPACE}"
-export UV_THREADPOOL_SIZE=${CPU_TOTAL}
-exec node ${TURBOFAN} "${W_PATH}" "\$@"
-WRAPPER
-chmod +x "$HOME/.local/bin/openclaw"
-ok "Wrapper criado em ~/.local/bin/openclaw"
+## 📊 Script padrão vs script otimizado
 
-# ── 10. .zshrc ────────────────────────────────────────────────
-info "Atualizando ~/.zshrc..."
-grep -q '\.local/bin' "$HOME/.zshrc" 2>/dev/null \
-  || printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$HOME/.zshrc"
-grep -q 'NVM_DIR' "$HOME/.zshrc" 2>/dev/null || {
-  printf '\nexport NVM_DIR="$HOME/.nvm"\n' >> "$HOME/.zshrc"
-  printf '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"\n' >> "$HOME/.zshrc"
-}
-ok ".zshrc atualizado"
+| Configuração | Script padrão | Script otimizado | Ganho |
+|---|---|---|---|
+| Heap Node.js | ~1.5 GB | até 56 GB | automático por chip |
+| Thread pool | 4 threads | até 24 threads | automático por cores |
+| Paralelismo pnpm | padrão | 80% dos p-cores | ~2× mais rápido |
+| Detecção de chip | nenhuma | M1 / M2 / M3 / M4 | flags por geração |
+| Comando global | symlink simples | wrapper otimizado | sempre otimizado |
+| Diretório de install | /opt (SIP restrito) | ~/.openclaw | sem conflito com SIP |
 
-# ── 11. Teste final ───────────────────────────────────────────
-export PATH="$HOME/.local/bin:$PATH"
-echo ""
-echo -e "${BLD}─────────────────────────────────────────${RST}"
-echo -e "${GRN}${BLD}  OpenClaw instalado com sucesso${RST}"
-echo -e "${BLD}─────────────────────────────────────────${RST}"
-echo -e "  Chip:    Apple ${CHIP_GEN}${CHIP_VARIANT}"
-echo -e "  Node.js: $(node --version)"
-echo -e "  Heap:    $(( NODE_HEAP_MB/1024 )) GB de ${RAM_GB} GB"
-echo ""
-echo -e "${YLW}${BLD}  PROXIMO PASSO OBRIGATORIO:${RST}"
-echo -e "  ${CYN}source ~/.zshrc${RST}"
-echo -e "  ${CYN}openclaw onboard${RST}"
-echo ""
+---
+
+## 🧠 Perfis de memória por configuração
+
+```
+M4 / M3 / M2 — 16 GB RAM
+├── Node.js heap  →  12 GB  (75%)
+└── macOS reserva →   4 GB  (25%)
+
+M4 / M3 / M2 — 8 GB RAM
+├── Node.js heap  →   5 GB  (62.5%)
+└── macOS reserva →   3 GB  (37.5%)
+
+M4 Max / M3 Max — 32 GB RAM
+├── Node.js heap  →  26 GB  (81.25%)
+└── macOS reserva →   6 GB  (18.75%)
+```
+
+> O macOS gerencia memória dinamicamente — o heap é um teto, não uma reserva fixa.  
+> O sistema realoca conforme necessário sem comprometer a estabilidade.
+
+---
+
+## ❓ FAQ
+
+**O script funciona em Intel Mac?**  
+Não. O script foi projetado exclusivamente para Apple Silicon (arm64). Macs Intel têm arquitetura diferente e não se beneficiariam das otimizações.
+
+**Posso rodar em Mac com 8 GB de RAM?**  
+Sim. O script detecta 8 GB e reserva 3 GB para o macOS, alocando 5 GB para o Node.js.
+
+**O que acontece se já tiver Node.js instalado?**  
+O script verifica se já existe Node 22+ antes de instalar. Se já estiver presente, pula essa etapa.
+
+**Como atualizar o OpenClaw depois?**  
+Rode o script novamente. Ele limpa a instalação anterior em `~/.openclaw/install` e faz uma instalação limpa com a versão mais recente.
+
+**O script modifica meu sistema fora do diretório home?**  
+Não. Tudo é instalado em `~/.openclaw`, `~/.nvm` e `~/.local/bin` — dentro do seu diretório home, sem precisar de `sudo`.
+
+**Por que `~/.local/bin` em vez de `/usr/local/bin`?**  
+`/usr/local/bin` pode ser protegido pelo SIP (System Integrity Protection) do macOS. `~/.local/bin` é um padrão Unix sem restrições, e o script já adiciona ao PATH automaticamente.
+
+---
+
+## 🐛 Reportar problemas
+
+Encontrou um bug ou comportamento inesperado?  
+Abra uma [issue](https://github.com/iagoplanosegue/openclawmacos/issues) com:
+
+- Saída completa do terminal
+- Resultado de `sysctl -n machdep.cpu.brand_string`
+- Resultado de `sysctl -n hw.memsize`
+- Versão do macOS (`sw_vers`)
+
+---
+
+## 📝 Changelog
+
+### [1.1.0] — 2026-03-08
+- Suporte completo a M1, M2, M3 e M4
+- Detecção automática de variante (base / Pro / Max / Ultra)
+- Perfis de heap ajustados por geração de chip
+- Flags `--turbofan` e `--max-semi-space-size` por chip
+- `printf` no lugar de `echo` no `.zshrc` (sem erros de history expansion)
+- Wrapper global com `UV_THREADPOOL_SIZE` automático
+
+### [1.0.0] — 2026-03-01
+- Versão inicial para Mac Mini M4 16 GB
+- Detecção de RAM e cálculo de heap
+- Instalação de nvm, Node.js 22 e pnpm
+- Wrapper global em `~/.local/bin`
+
+---
+
+## 📄 Licença
+
+MIT © [Iago Plano Segue](https://github.com/iagoplanosegue)
+
+---
+
+<div align="center">
+  <sub>Guia completo de instalação em <a href="https://planosegue.com">planosegue.com</a></sub>
+</div>
