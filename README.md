@@ -175,5 +175,5 @@ MIT © [Iago PlanoSegue](https://github.com/iagoplanosegue)
 ---
 
 <div align="center">
-  <sub>Guia completo de instalação em <a href="https://planosegue.com">planosegue.com</a></sub>
+  <sub>Guia completo de instalação em <a href="https://planosegue.com/mac">planosegue.com</a></sub>
 </div>
